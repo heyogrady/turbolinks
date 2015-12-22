@@ -32,7 +32,7 @@ module Turbolinks
 
         self.status = 200
         self.response_body = script.join("\n")
-        response.content_type = Mime::JS
+        response.content_type = "text/javascript"
       end
 
       def store_turbolinks_location_in_session(location)
