@@ -3,6 +3,10 @@
 class Turbolinks.BrowserAdapter
   PROGRESS_BAR_DELAY = 500
 
+  ANNOTATION_CLASS_NAMES =
+    snapshot: "turbolinks-snapshot"
+    loading: "turbolinks-loading"
+
   constructor: (@controller) ->
     @progressBar = new Turbolinks.ProgressBar
 
@@ -12,9 +16,11 @@ class Turbolinks.BrowserAdapter
   visitStarted: (visit) ->
     visit.changeHistory()
     visit.issueRequest()
-    visit.restoreSnapshot()
+    if visit.restoreSnapshot()
+      @annotateDocument("snapshot")
 
   visitRequestStarted: (visit) ->
+    @annotateDocument("loading")
     @progressBar.setValue(0)
     unless visit.snapshotRestored
       if visit.hasSnapshot() or visit.action isnt "restore"
@@ -36,6 +42,7 @@ class Turbolinks.BrowserAdapter
         visit.loadResponse()
 
   visitRequestFinished: (visit) ->
+    @removeDocumentAnnotations()
     @hideProgressBar()
 
   visitResponseLoaded: (visit) ->
@@ -55,6 +62,15 @@ class Turbolinks.BrowserAdapter
   hideProgressBar: ->
     @progressBar.hide()
     clearTimeout(@progressBarTimeout)
+
+  annotateDocument: (annotation) ->
+    className = ANNOTATION_CLASS_NAMES[annotation]
+    document.documentElement.classList.add(className)
+
+  removeDocumentAnnotations: ->
+    for key, className of ANNOTATION_CLASS_NAMES
+      document.documentElement.classList.remove(className)
+    return
 
   reload: ->
     window.location.reload()
