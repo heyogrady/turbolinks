@@ -46,6 +46,7 @@ class Turbolinks.Visit
 
   issueRequest: ->
     if @shouldIssueRequest() and not @request?
+      @addAnnotation("loading")
       @progress = 0
       @request = new Turbolinks.HttpRequest this, @location, @referrer
       @request.send()
@@ -63,6 +64,8 @@ class Turbolinks.Visit
     if @hasSnapshot() and not @snapshotRestored
       @render ->
         @saveSnapshot()
+        @addAnnotation("snapshot")
+        @addAnnotation("loading") if @request?
         if @snapshotRestored = @controller.restoreSnapshotForLocation(@location)
           @performScroll()
           @adapter.visitSnapshotRestored?(this)
@@ -72,6 +75,7 @@ class Turbolinks.Visit
     if @response?
       @render ->
         @saveSnapshot()
+        @removeAllAnnotations()
         if @request.failed
           @controller.loadErrorResponse(@response)
           @performScroll()
@@ -131,6 +135,25 @@ class Turbolinks.Visit
   scrollToTop: ->
     @controller.scrollToPosition(x: 0, y: 0)
 
+  # Annotating
+
+  ANNOTATION_CLASS_NAMES =
+    snapshot: "turbolinks-snapshot"
+    loading: "turbolinks-loading"
+
+  addAnnotation: (annotation) ->
+    className = ANNOTATION_CLASS_NAMES[annotation]
+    document.documentElement.classList.add(className)
+
+  removeAnnotation: (annotation) ->
+    className = ANNOTATION_CLASS_NAMES[annotation]
+    document.documentElement.classList.remove(className)
+
+  removeAllAnnotations: ->
+    for annotation of ANNOTATION_CLASS_NAMES
+      @removeAnnotation(annotation)
+    return
+
   # Private
 
   getHistoryMethodForAction = (action) ->
@@ -146,6 +169,7 @@ class Turbolinks.Visit
 
   saveSnapshot: ->
     unless @snapshotSaved
+      @removeAllAnnotations()
       @controller.saveSnapshot()
       @snapshotSaved = true
 
